@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa de Calor - PMO VÍAS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a3a6e 0%, #243b6d 50%, #2d4a7c 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1500px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 10px;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-icon {
+            width: 60px;
+            height: 60px;
+            background: white;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 5px;
+        }
+
+        .logo-icon svg {
+            width: 50px;
+            height: 50px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.2em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            color: #ffffff;
+        }
+
+        h1 .pmo {
+            color: #1a3a6e;
+            background: white;
+            padding: 2px 8px;
+            border-radius: 5px;
+            font-weight: 800;
+        }
+
+        h1 .vias {
+            color: #d0d3d4;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 1.2em;
+            color: #d0d3d4;
+            margin-bottom: 5px;
+        }
+
+        .author {
+            text-align: center;
+            font-size: 0.85em;
+            color: #a0a8b0;
+            font-style: italic;
+            margin-bottom: 30px;
+        }
+
+        .upload-section {
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            border: 2px dashed rgba(255,255,255,0.3);
+            transition: all 0.3s ease;
+        }
+
+        .upload-section:hover {
+            border-color: #d32027;
+            background: rgba(255,255,255,0.15);
+        }
+
+        .upload-section.dragover {
+            border-color: #d32027;
+            background: rgba(211,32,39,0.1);
+        }
+
+        .upload-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+
+        .upload-text {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+            color: #d0d3d4;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-btn {
+            background: linear-gradient(135deg, #d32027, #b81c22);
+            color: #ffffff;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1em;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .upload-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(211,32,39,0.4);
+        }
+
+        .charts-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        @media (max-width: 1200px) {
+            .charts-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .chart-wrapper {
+            background: rgba(255,255,255,0.98);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .chart-title {
+            text-align: center;
+            color: #1a3a6e;
+            font-size: 1.15em;
+            font-weight: 600;
+            flex: 1;
+        }
+
+        .download-btn {
+            background: linear-gradient(135deg, #1a3a6e, #2d4a7c);
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            font-size: 0.9em;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .download-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(26,58,110,0.4);
+            background: linear-gradient(135deg, #d32027, #b81c22);
+        }
+
+        .download-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .chart-area {
+            position: relative;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+
+        canvas {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .stats-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #ffffff;
+        }
+
+        .stat-value.aliado {
+            color: #4ade80;
+        }
+
+        .stat-value.neutro {
+            color: #fbbf24;
+        }
+
+        .stat-value.opositor {
+            color: #f87171;
+        }
+
+        .stat-label {
+            color: #d0d3d4;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255,255,255,0.1);
+            border-top-color: #d32027;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .file-name {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: rgba(211,32,39,0.2);
+            border-radius: 20px;
+            display: inline-block;
+            color: #ffffff;
+            border: 1px solid rgba(211,32,39,0.4);
+        }
+
+        .tooltip {
+            position: absolute;
+            background: rgba(26,58,110,0.95);
+            color: #fff;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            pointer-events: none;
+            z-index: 1000;
+            white-space: nowrap;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            border: 1px solid rgba(211,32,39,0.5);
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: #a0a8b0;
+            font-size: 0.85em;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .download-all-section {
+            text-align: center;
+            margin-top: 25px;
+        }
+
+        .download-all-btn {
+            background: linear-gradient(135deg, #d32027, #b81c22);
+            color: white;
+            border: none;
+            padding: 14px 35px;
+            font-size: 1em;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .download-all-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(211,32,39,0.4);
+        }
+
+        .download-all-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo-container">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M30 75 L30 45 Q30 25 50 25 Q70 25 70 45 L70 50 Q70 35 55 35 L45 35 Q35 35 35 50 L35 75 Z" fill="#d32027"/>
+                        <path d="M25 75 L25 50 Q25 20 55 20 Q75 20 75 40 L75 45 Q75 30 55 30 Q40 30 40 50 L40 75 Z" fill="#1a3a6e"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        <h1>📊 <span class="pmo">PMO</span><span class="vias">VÍAS</span> - VESR-EPARTICIPATIVE</h1>
+        <p class="subtitle">Análisis de Mapas de Calor - Encuestas</p>
+        <p class="author">Elaborado por Dennis Chum</p>
+        
+        <div class="upload-section" id="dropZone">
+            <div class="upload-icon">📁</div>
+            <p class="upload-text">Arrastra y suelta tu archivo Excel aquí o haz clic para seleccionar</p>
+            <input type="file" id="fileInput" class="file-input" accept=".xlsx,.xls">
+            <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                Seleccionar Archivo Excel
+            </button>
+            <div id="fileName" class="file-name hidden"></div>
+        </div>
+
+        <div id="loading" class="loading hidden">
+            <div class="spinner"></div>
+            <p>Procesando datos...</p>
+        </div>
+
+        <div id="results" class="hidden">
+            <div class="stats-section">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalRecords">0</div>
+                    <div class="stat-label">Total de Registros</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalDistritos">0</div>
+                    <div class="stat-label">Distritos</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value aliado" id="totalAliados">0</div>
+                    <div class="stat-label">Aliados</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value neutro" id="totalNeutros">0</div>
+                    <div class="stat-label">Neutros</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value opositor" id="totalOpositores">0</div>
+                    <div class="stat-label">Opositores</div>
+                </div>
+            </div>
+
+            <div class="charts-container">
+                <div class="chart-wrapper">
+                    <div class="chart-header">
+                        <div class="chart-title">Concentración por Distrito y Calificación</div>
+                        <button class="download-btn" onclick="downloadChart('heatmapCalificacion', 'mapa_calor_calificacion')">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                            JPG
+                        </button>
+                    </div>
+                    <div class="chart-area">
+                        <canvas id="heatmapCalificacion" width="900" height="600"></canvas>
+                    </div>
+                </div>
+                <div class="chart-wrapper">
+                    <div class="chart-header">
+                        <div class="chart-title">Concentración por Distrito y Edad</div>
+                        <button class="download-btn" onclick="downloadChart('heatmapEdad', 'mapa_calor_edad')">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                            JPG
+                        </button>
+                    </div>
+                    <div class="chart-area">
+                        <canvas id="heatmapEdad" width="900" height="600"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="download-all-section">
+                <button class="download-all-btn" onclick="downloadAllCharts()">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    Descargar Todos los Gráficos
+                </button>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>PMO VÍAS - Sistema de Análisis de Encuestas Participativas</p>
+        </div>
+    </div>
+
+    <div id="tooltip" class="tooltip hidden"></div>
+
+    <script>
+    // ============================================
+    // FUNCIONES DE DESCARGA JPG - ALTA RESOLUCIÓN
+    // ============================================
+    function downloadChart(canvasId, fileName) {
+        const canvas = document.getElementById(canvasId);
+        
+        // Crear un canvas de alta resolución (2x)
+        const scale = 2;
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvas.width * scale;
+        tempCanvas.height = canvas.height * scale;
+        const tempCtx = tempCanvas.getContext('2d');
+        
+        // Escalar para alta resolución
+        tempCtx.scale(scale, scale);
+        
+        // Fondo blanco
+        tempCtx.fillStyle = '#ffffff';
+        tempCtx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Dibujar el contenido original
+        tempCtx.drawImage(canvas, 0, 0);
+        
+        // Agregar marca de agua PMOVÍAS
+        tempCtx.fillStyle = 'rgba(26, 58, 110, 0.4)';
+        tempCtx.font = 'bold 14px Arial';
+        tempCtx.textAlign = 'right';
+        tempCtx.fillText('PMOVÍAS', canvas.width - 15, canvas.height - 15);
+        
+        // Convertir a JPG alta calidad y descargar
+        const link = document.createElement('a');
+        link.download = fileName + '_HD.jpg';
+        link.href = tempCanvas.toDataURL('image/jpeg', 1.0);
+        link.click();
+    }
+
+    function downloadAllCharts() {
+        downloadChart('heatmapCalificacion', 'mapa_calor_calificacion');
+        setTimeout(() => {
+            downloadChart('heatmapEdad', 'mapa_calor_edad');
+        }, 500);
+    }
+
+    // ============================================
+    // MINI XLSX PARSER (Sin dependencias externas)
+    // ============================================
+    const XLSX_PARSER = {
+        async unzip(arrayBuffer) {
+            const dataView = new DataView(arrayBuffer);
+            const files = {};
+            let offset = 0;
+            
+            while (offset < arrayBuffer.byteLength - 4) {
+                const signature = dataView.getUint32(offset, true);
+                if (signature !== 0x04034b50) break;
+                
+                const compressionMethod = dataView.getUint16(offset + 8, true);
+                const compressedSize = dataView.getUint32(offset + 18, true);
+                const fileNameLength = dataView.getUint16(offset + 26, true);
+                const extraFieldLength = dataView.getUint16(offset + 28, true);
+                
+                const fileNameStart = offset + 30;
+                const fileNameBytes = new Uint8Array(arrayBuffer, fileNameStart, fileNameLength);
+                const fileName = new TextDecoder().decode(fileNameBytes);
+                
+                const dataStart = fileNameStart + fileNameLength + extraFieldLength;
+                const compressedData = new Uint8Array(arrayBuffer, dataStart, compressedSize);
+                
+                if (compressionMethod === 0) {
+                    files[fileName] = compressedData;
+                } else if (compressionMethod === 8) {
+                    try {
+                        const decompressed = await this.inflate(compressedData);
+                        files[fileName] = decompressed;
+                    } catch (e) {
+                        files[fileName] = compressedData;
+                    }
+                }
+                
+                offset = dataStart + compressedSize;
+            }
+            
+            return files;
+        },
+
+        async inflate(data) {
+            const ds = new DecompressionStream('deflate-raw');
+            const writer = ds.writable.getWriter();
+            writer.write(data);
+            writer.close();
+            
+            const reader = ds.readable.getReader();
+            const chunks = [];
+            
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                chunks.push(value);
+            }
+            
+            const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
+            const result = new Uint8Array(totalLength);
+            let offset = 0;
+            for (const chunk of chunks) {
+                result.set(chunk, offset);
+                offset += chunk.length;
+            }
+            
+            return result;
+        },
+
+        parseXML(text) {
+            const parser = new DOMParser();
+            return parser.parseFromString(text, 'application/xml');
+        },
+
+        async parse(arrayBuffer) {
+            const files = await this.unzip(arrayBuffer);
+            const data = [];
+            
+            const sharedStrings = [];
+            const ssFile = files['xl/sharedStrings.xml'];
+            if (ssFile) {
+                const ssText = new TextDecoder().decode(ssFile);
+                const ssDoc = this.parseXML(ssText);
+                const siElements = ssDoc.getElementsByTagName('si');
+                for (let i = 0; i < siElements.length; i++) {
+                    const tElements = siElements[i].getElementsByTagName('t');
+                    let text = '';
+                    for (let j = 0; j < tElements.length; j++) {
+                        text += tElements[j].textContent || '';
+                    }
+                    sharedStrings.push(text);
+                }
+            }
+            
+            const sheetFile = files['xl/worksheets/sheet1.xml'];
+            if (!sheetFile) return data;
+            
+            const sheetText = new TextDecoder().decode(sheetFile);
+            const sheetDoc = this.parseXML(sheetText);
+            const rows = sheetDoc.getElementsByTagName('row');
+            
+            for (let i = 0; i < rows.length; i++) {
+                const rowData = [];
+                const cells = rows[i].getElementsByTagName('c');
+                let lastCol = 0;
+                
+                for (let j = 0; j < cells.length; j++) {
+                    const cell = cells[j];
+                    const ref = cell.getAttribute('r') || '';
+                    const colMatch = ref.match(/^([A-Z]+)/);
+                    const colIndex = colMatch ? this.colToIndex(colMatch[1]) : lastCol;
+                    
+                    while (rowData.length < colIndex) {
+                        rowData.push('');
+                    }
+                    
+                    const type = cell.getAttribute('t');
+                    const vElement = cell.getElementsByTagName('v')[0];
+                    let value = vElement ? vElement.textContent : '';
+                    
+                    if (type === 's' && value !== '') {
+                        value = sharedStrings[parseInt(value)] || '';
+                    }
+                    
+                    rowData.push(value);
+                    lastCol = colIndex + 1;
+                }
+                
+                data.push(rowData);
+            }
+            
+            return data;
+        },
+
+        colToIndex(col) {
+            let index = 0;
+            for (let i = 0; i < col.length; i++) {
+                index = index * 26 + (col.charCodeAt(i) - 64);
+            }
+            return index - 1;
+        }
+    };
+
+    // ============================================
+    // PROCESADOR DE DATOS
+    // ============================================
+    class DataProcessor {
+        constructor(rawData) {
+            this.headers = rawData[0].map(h => h ? h.toString().toLowerCase().trim() : '');
+            this.rows = rawData.slice(1);
+            this.processedData = this.processRows();
+        }
+
+        findColumnIndex(possibleNames) {
+            for (const name of possibleNames) {
+                const index = this.headers.findIndex(h => h.includes(name.toLowerCase()));
+                if (index !== -1) return index;
+            }
+            return -1;
+        }
+
+        processRows() {
+            const distritoCol = this.findColumnIndex(['distrito', 'district']);
+            const edadCol = this.findColumnIndex(['edad', 'age', 'rango']);
+            const calificacionCol = this.findColumnIndex(['calificar', 'calificacion', 'actor']);
+
+            const data = [];
+            
+            for (const row of this.rows) {
+                if (!row || row.length === 0) continue;
+                
+                let distrito = distritoCol >= 0 ? (row[distritoCol] || '').toString().trim() : '';
+                let edad = edadCol >= 0 ? (row[edadCol] || '').toString().trim() : '';
+                let calificacion = calificacionCol >= 0 ? (row[calificacionCol] || '').toString().trim() : '';
+                
+                if (!distrito || distrito === '') continue;
+                
+                distrito = this.normalizeDistrito(distrito);
+                edad = this.normalizeEdad(edad);
+                calificacion = this.normalizeCalificacion(calificacion);
+                
+                data.push({ distrito, edad, calificacion });
+            }
+            
+            return data;
+        }
+
+        normalizeDistrito(d) {
+            d = d.toLowerCase();
+            if (d.includes('perla')) return 'La Perla';
+            if (d.includes('bellavista')) return 'Bellavista';
+            if (d.includes('callao')) return 'Callao';
+            return 'Otros';
+        }
+
+        normalizeEdad(e) {
+            e = e.toString().toUpperCase();
+            if (e.includes('18') || e.includes('25')) return '18-25';
+            if (e.includes('26') || e.includes('36')) return '26-36';
+            if (e.includes('37') || e.includes('50')) return '37-50';
+            if (e.includes('51') || e.includes('MAS') || e.includes('+')) return '51+';
+            return '51+';
+        }
+
+        normalizeCalificacion(c) {
+            c = c.toLowerCase();
+            if (c.includes('aliado')) return 'Aliado';
+            if (c.includes('opositor')) return 'Opositor';
+            return 'Neutro';
+        }
+
+        getMatrix(rowField, colField, rowOrder, colOrder) {
+            const matrix = {};
+            
+            for (const row of rowOrder) {
+                matrix[row] = {};
+                for (const col of colOrder) {
+                    matrix[row][col] = 0;
+                }
+            }
+            
+            for (const item of this.processedData) {
+                const rowVal = item[rowField];
+                const colVal = item[colField];
+                if (matrix[rowVal] && matrix[rowVal][colVal] !== undefined) {
+                    matrix[rowVal][colVal]++;
+                }
+            }
+            
+            return matrix;
+        }
+
+        getStats() {
+            const aliados = this.processedData.filter(d => d.calificacion === 'Aliado').length;
+            const neutros = this.processedData.filter(d => d.calificacion === 'Neutro').length;
+            const opositores = this.processedData.filter(d => d.calificacion === 'Opositor').length;
+            const distritos = new Set(this.processedData.map(d => d.distrito)).size;
+            
+            return {
+                total: this.processedData.length,
+                distritos,
+                aliados,
+                neutros,
+                opositores
+            };
+        }
+    }
+
+    // ============================================
+    // GENERADOR DE MAPAS DE CALOR - MEJORADO
+    // ============================================
+    class HeatmapRenderer {
+        constructor(canvas) {
+            this.canvas = canvas;
+            this.ctx = canvas.getContext('2d');
+            // Padding aumentado para mejor visualización
+            this.padding = { top: 60, right: 120, bottom: 80, left: 110 };
+        }
+
+        getBlueGreenColor(value, min, max) {
+            const t = max > min ? (value - min) / (max - min) : 0;
+            
+            const colors = [
+                { r: 245, g: 250, b: 220 },
+                { r: 180, g: 230, b: 180 },
+                { r: 100, g: 200, b: 180 },
+                { r: 50, g: 180, b: 180 },
+                { r: 20, g: 120, b: 150 },
+                { r: 10, g: 60, b: 100 }
+            ];
+            
+            const idx = t * (colors.length - 1);
+            const i = Math.floor(idx);
+            const f = idx - i;
+            
+            const c1 = colors[Math.min(i, colors.length - 1)];
+            const c2 = colors[Math.min(i + 1, colors.length - 1)];
+            
+            const r = Math.round(c1.r + (c2.r - c1.r) * f);
+            const g = Math.round(c1.g + (c2.g - c1.g) * f);
+            const b = Math.round(c1.b + (c2.b - c1.b) * f);
+            
+            return `rgb(${r},${g},${b})`;
+        }
+
+        getOrangeRedColor(value, min, max) {
+            const t = max > min ? (value - min) / (max - min) : 0;
+            
+            const colors = [
+                { r: 255, g: 245, b: 235 },
+                { r: 255, g: 220, b: 180 },
+                { r: 250, g: 180, b: 130 },
+                { r: 240, g: 130, b: 90 },
+                { r: 200, g: 80, b: 60 },
+                { r: 120, g: 30, b: 30 }
+            ];
+            
+            const idx = t * (colors.length - 1);
+            const i = Math.floor(idx);
+            const f = idx - i;
+            
+            const c1 = colors[Math.min(i, colors.length - 1)];
+            const c2 = colors[Math.min(i + 1, colors.length - 1)];
+            
+            const r = Math.round(c1.r + (c2.r - c1.r) * f);
+            const g = Math.round(c1.g + (c2.g - c1.g) * f);
+            const b = Math.round(c1.b + (c2.b - c1.b) * f);
+            
+            return `rgb(${r},${g},${b})`;
+        }
+
+        render(matrix, rowLabels, colLabels, colorType = 'bluegreen', xAxisLabel = '', yAxisLabel = '', title = '') {
+            const ctx = this.ctx;
+            const width = this.canvas.width;
+            const height = this.canvas.height;
+            
+            // Limpiar canvas con fondo blanco
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, width, height);
+            
+            // Título del gráfico
+            if (title) {
+                ctx.fillStyle = '#1a3a6e';
+                ctx.font = 'bold 18px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(title, width / 2, 30);
+            }
+            
+            // Calcular dimensiones de celdas
+            const chartWidth = width - this.padding.left - this.padding.right;
+            const chartHeight = height - this.padding.top - this.padding.bottom;
+            const cellWidth = chartWidth / colLabels.length;
+            const cellHeight = chartHeight / rowLabels.length;
+            
+            // Encontrar min/max valores
+            let minVal = Infinity, maxVal = -Infinity;
+            for (const row of rowLabels) {
+                for (const col of colLabels) {
+                    const val = matrix[row][col];
+                    minVal = Math.min(minVal, val);
+                    maxVal = Math.max(maxVal, val);
+                }
+            }
+            
+            this.cells = [];
+            
+            // Dibujar celdas
+            for (let i = 0; i < rowLabels.length; i++) {
+                for (let j = 0; j < colLabels.length; j++) {
+                    const value = matrix[rowLabels[i]][colLabels[j]];
+                    const x = this.padding.left + j * cellWidth;
+                    const y = this.padding.top + i * cellHeight;
+                    
+                    const color = colorType === 'bluegreen' 
+                        ? this.getBlueGreenColor(value, minVal, maxVal)
+                        : this.getOrangeRedColor(value, minVal, maxVal);
+                    
+                    ctx.fillStyle = color;
+                    ctx.fillRect(x, y, cellWidth, cellHeight);
+                    
+                    // Borde más visible
+                    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(x, y, cellWidth, cellHeight);
+                    
+                    // Valor en la celda - más grande
+                    const brightness = this.getBrightness(color);
+                    ctx.fillStyle = brightness > 128 ? '#1a3a6e' : '#ffffff';
+                    ctx.font = 'bold 22px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(value.toString(), x + cellWidth / 2, y + cellHeight / 2);
+                    
+                    this.cells.push({
+                        x, y, width: cellWidth, height: cellHeight,
+                        row: rowLabels[i], col: colLabels[j], value
+                    });
+                }
+            }
+            
+            // Etiquetas de filas (Y) - más grandes
+            ctx.fillStyle = '#1a3a6e';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            for (let i = 0; i < rowLabels.length; i++) {
+                const y = this.padding.top + i * cellHeight + cellHeight / 2;
+                ctx.fillText(rowLabels[i], this.padding.left - 15, y);
+            }
+            
+            // Etiquetas de columnas (X) - más grandes
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.font = 'bold 14px Arial';
+            for (let j = 0; j < colLabels.length; j++) {
+                const x = this.padding.left + j * cellWidth + cellWidth / 2;
+                ctx.fillText(colLabels[j], x, this.padding.top + chartHeight + 15);
+            }
+            
+            // Etiqueta del eje X - más grande
+            if (xAxisLabel) {
+                ctx.font = 'bold 15px Arial';
+                ctx.fillStyle = '#1a3a6e';
+                ctx.textAlign = 'center';
+                ctx.fillText(xAxisLabel, this.padding.left + chartWidth / 2, height - 15);
+            }
+            
+            // Etiqueta del eje Y - más grande
+            if (yAxisLabel) {
+                ctx.save();
+                ctx.translate(20, this.padding.top + chartHeight / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.font = 'bold 15px Arial';
+                ctx.fillStyle = '#1a3a6e';
+                ctx.textAlign = 'center';
+                ctx.fillText(yAxisLabel, 0, 0);
+                ctx.restore();
+            }
+            
+            // Dibujar barra de color mejorada
+            this.drawColorBar(colorType, minVal, maxVal);
+        }
+
+        getBrightness(color) {
+            const match = color.match(/rgb\((\d+),(\d+),(\d+)\)/);
+            if (match) {
+                const r = parseInt(match[1]);
+                const g = parseInt(match[2]);
+                const b = parseInt(match[3]);
+                return (r * 299 + g * 587 + b * 114) / 1000;
+            }
+            return 128;
+        }
+
+        drawColorBar(colorType, minVal, maxVal) {
+            const ctx = this.ctx;
+            const barWidth = 25;
+            const barHeight = this.canvas.height - this.padding.top - this.padding.bottom;
+            const barX = this.canvas.width - this.padding.right + 25;
+            const barY = this.padding.top;
+            
+            // Dibujar gradiente
+            for (let i = 0; i < barHeight; i++) {
+                const value = maxVal - (i / barHeight) * (maxVal - minVal);
+                const color = colorType === 'bluegreen'
+                    ? this.getBlueGreenColor(value, minVal, maxVal)
+                    : this.getOrangeRedColor(value, minVal, maxVal);
+                ctx.fillStyle = color;
+                ctx.fillRect(barX, barY + i, barWidth, 1);
+            }
+            
+            // Borde de la barra
+            ctx.strokeStyle = '#1a3a6e';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(barX, barY, barWidth, barHeight);
+            
+            // Calcular número de etiquetas según rango
+            const range = maxVal - minVal;
+            let numLabels = 5;
+            if (range <= 10) numLabels = range + 1;
+            else if (range <= 20) numLabels = 5;
+            else numLabels = 6;
+            
+            // Etiquetas de la barra - más números
+            ctx.fillStyle = '#1a3a6e';
+            ctx.font = 'bold 12px Arial';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            
+            for (let i = 0; i < numLabels; i++) {
+                const ratio = i / (numLabels - 1);
+                const value = Math.round(maxVal - ratio * (maxVal - minVal));
+                const yPos = barY + ratio * barHeight;
+                
+                // Línea de referencia
+                ctx.strokeStyle = '#1a3a6e';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(barX + barWidth, yPos);
+                ctx.lineTo(barX + barWidth + 5, yPos);
+                ctx.stroke();
+                
+                // Número
+                ctx.fillText(value.toString(), barX + barWidth + 8, yPos);
+            }
+            
+            // Título de la barra - "Cantidad de personas" vertical
+            ctx.save();
+            ctx.translate(barX + barWidth + 55, barY + barHeight / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.font = 'bold 13px Arial';
+            ctx.fillStyle = '#1a3a6e';
+            ctx.textAlign = 'center';
+            ctx.fillText('Cantidad de personas', 0, 0);
+            ctx.restore();
+        }
+
+        getCellAt(x, y) {
+            for (const cell of this.cells || []) {
+                if (x >= cell.x && x < cell.x + cell.width &&
+                    y >= cell.y && y < cell.y + cell.height) {
+                    return cell;
+                }
+            }
+            return null;
+        }
+    }
+
+    // ============================================
+    // APLICACIÓN PRINCIPAL
+    // ============================================
+    let processor = null;
+    let heatmap1 = null;
+    let heatmap2 = null;
+
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const loading = document.getElementById('loading');
+    const results = document.getElementById('results');
+    const fileName = document.getElementById('fileName');
+    const tooltip = document.getElementById('tooltip');
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        const file = e.dataTransfer.files[0];
+        if (file) processFile(file);
+    });
+
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) processFile(file);
+    });
+
+    async function processFile(file) {
+        if (!file.name.match(/\.xlsx?$/i)) {
+            alert('Por favor, selecciona un archivo Excel (.xlsx)');
+            return;
+        }
+
+        fileName.textContent = '📄 ' + file.name;
+        fileName.classList.remove('hidden');
+        loading.classList.remove('hidden');
+        results.classList.add('hidden');
+
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            const rawData = await XLSX_PARSER.parse(arrayBuffer);
+            
+            processor = new DataProcessor(rawData);
+            
+            const stats = processor.getStats();
+            document.getElementById('totalRecords').textContent = stats.total;
+            document.getElementById('totalDistritos').textContent = stats.distritos;
+            document.getElementById('totalAliados').textContent = stats.aliados;
+            document.getElementById('totalNeutros').textContent = stats.neutros;
+            document.getElementById('totalOpositores').textContent = stats.opositores;
+
+            renderHeatmaps();
+            
+            loading.classList.add('hidden');
+            results.classList.remove('hidden');
+            
+        } catch (error) {
+            console.error('Error procesando archivo:', error);
+            alert('Error al procesar el archivo. Asegúrate de que es un archivo Excel válido.');
+            loading.classList.add('hidden');
+        }
+    }
+
+    function renderHeatmaps() {
+        const distritos = ['Bellavista', 'Callao', 'La Perla', 'Otros'];
+        const calificaciones = ['Aliado', 'Neutro', 'Opositor'];
+        const edades = ['18-25', '26-36', '37-50', '51+'];
+
+        // Mapa de calor 1: Distrito vs Calificación
+        const canvas1 = document.getElementById('heatmapCalificacion');
+        heatmap1 = new HeatmapRenderer(canvas1);
+        const matrix1 = processor.getMatrix('distrito', 'calificacion', distritos, calificaciones);
+        heatmap1.render(matrix1, distritos, calificaciones, 'bluegreen', 'Calificación al Actor', 'Distrito', 'Mapa de Calor: Distrito vs Calificación');
+
+        // Mapa de calor 2: Distrito vs Edad
+        const canvas2 = document.getElementById('heatmapEdad');
+        heatmap2 = new HeatmapRenderer(canvas2);
+        const matrix2 = processor.getMatrix('distrito', 'edad', distritos, edades);
+        heatmap2.render(matrix2, distritos, edades, 'orangered', 'Rango de Edad', 'Distrito', 'Mapa de Calor: Distrito vs Edad');
+
+        setupTooltips(canvas1, heatmap1);
+        setupTooltips(canvas2, heatmap2);
+    }
+
+    function setupTooltips(canvas, renderer) {
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const x = (e.clientX - rect.left) * scaleX;
+            const y = (e.clientY - rect.top) * scaleY;
+
+            const cell = renderer.getCellAt(x, y);
+            if (cell) {
+                tooltip.innerHTML = `
+                    <strong>${cell.row}</strong><br>
+                    ${cell.col}: <strong>${cell.value}</strong> personas
+                `;
+                tooltip.style.left = (e.clientX + 15) + 'px';
+                tooltip.style.top = (e.clientY + 15) + 'px';
+                tooltip.classList.remove('hidden');
+            } else {
+                tooltip.classList.add('hidden');
+            }
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            tooltip.classList.add('hidden');
+        });
+    }
+    </script>
+</body>
+</html>
